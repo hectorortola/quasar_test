@@ -18,11 +18,9 @@ class CategoryController extends AbstractController
         $new_category = new Category();
         $response = new JsonResponse();
 
-        # Get request parameters
         $parameters = json_decode($request->getContent(), true);
         $name = $parameters['name'];
 
-        # Check if fields are empty
         if (empty($name)) {
             $response->setData([
                 'success' => false,
@@ -32,10 +30,7 @@ class CategoryController extends AbstractController
             return $response;
         }
 
-        # Set attributes to the new user
         $new_category->setName($name);
-
-        # Save
         $categoryRepository->save($new_category, true);
 
         $response->setData([
@@ -54,7 +49,7 @@ class CategoryController extends AbstractController
     {
         $response = new JsonResponse();
         $categories = $categoryRepository->findAll();
-        $categoryList = [];
+        $category_list = [];
 
         if (count($categories) === 0){
             $response->setData([
@@ -64,9 +59,8 @@ class CategoryController extends AbstractController
             return $response;
         }
 
-        # Iterate to build array with data
         foreach ($categories as $category) {
-            $categoryList[] = [
+            $category_list[] = [
                 'id' => $category->getId(),
                 'name' => $category->getName(),
             ];
@@ -74,7 +68,7 @@ class CategoryController extends AbstractController
         
         $response->setData([
             'success' => true,
-            'data' => $categoryList
+            'data' => $category_list
         ]);
         return $response;
     }
@@ -85,12 +79,15 @@ class CategoryController extends AbstractController
         $response = new JsonResponse();
         $category_to_delete = $categoryRepository->find($id);
         if (!$category_to_delete) {
-            return $this->json('No user found for id' . $id, 404);
+            $response->setData([
+                'success' => false,
+                'error' => 'No user found for id '. $id
+            ]);
+            $response->setStatusCode(404);
+            return $response;
         }
 
         $categoryRepository->remove($category_to_delete, true);
-
-        # Response body
         $response->setData([
             'success' => true,
             'data' => 'Category with id ' . $id . ' has been deleted successfully'
@@ -108,17 +105,14 @@ class CategoryController extends AbstractController
             return $this->json('No category found for id' . $id, 404);
         }
 
-        # Get params
         $parameters = json_decode($request->getContent(), true);
         $name = $parameters['name'];
 
-        # Update
         if ($category_to_update->getName() !== $name) {
             $category_to_update->setName($name);
         }
         $entityManager->flush();
 
-        # Prepare response
         $response = new JsonResponse();
         $response->setData([
             'success' => true,

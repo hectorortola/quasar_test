@@ -20,12 +20,10 @@ class NoteController extends AbstractController
         $new_note = new Note();
         $new_note->setDateCreated(new \DateTime());
 
-        # Get request parameters
         $parameters = json_decode($request->getContent(), true);
         $content = $parameters['content'];
         $user_id = $parameters['user_id'];
 
-        # Check if content is empty
         if (strlen($content) <= 0) {
             $response->setData([
                 'success' => false,
@@ -36,7 +34,6 @@ class NoteController extends AbstractController
             return $response;
         }
 
-        # Check if user_id exist
         if (!$user_id or $user_id <= 0) {
             $response->setData([
                 'success' => false,
@@ -46,6 +43,7 @@ class NoteController extends AbstractController
             $response->setStatusCode(422);
             return $response;
         }
+
         $user = $entityManager->getRepository(User::class)->find($user_id);
         if (!$user) {
             $response->setData([
@@ -59,8 +57,6 @@ class NoteController extends AbstractController
 
         $new_note->setContent($content);
         $new_note->setOwner($user);
-
-        # Save
         $entityManager->getRepository(Note::class)->save($new_note, true);
 
         $response->setData([
@@ -84,7 +80,7 @@ class NoteController extends AbstractController
     {
         $response = new JsonResponse();
         $notes = $entityManager->getRepository(Note::class)->findAll();
-        $noteList = [];
+        $note_list = [];
 
         if (count($notes) === 0) {
             $response->setData([
@@ -94,10 +90,8 @@ class NoteController extends AbstractController
             return $response;
         }
 
-        # Iterate to build array with data
         foreach ($notes as $note) {
             $user = $entityManager->getRepository(User::class)->find($note->getOwner());
-
             $note_categories = $note->getCategories();
             $category_list = [];
 
@@ -121,7 +115,7 @@ class NoteController extends AbstractController
                 };
             }
 
-            $noteList[] = [
+            $note_list[] = [
                 'id' => $note->getId(),
                 'content' => $note->getContent(),
                 'date_created' => $note->getDateCreated(),
@@ -136,7 +130,7 @@ class NoteController extends AbstractController
 
         $response->setData([
             'success' => true,
-            'data' => $noteList
+            'data' => $note_list
         ]);
         return $response;
     }
@@ -181,12 +175,10 @@ class NoteController extends AbstractController
             return $response;
         }
 
-        # Get params
         $parameters = json_decode($request->getContent(), true);
         $content = $parameters['content'];
         $user_id = $parameters['user_id'];
 
-        # Check if content is empty
         if (strlen($content) <= 0) {
             $response->setData([
                 'success' => false,
@@ -197,7 +189,6 @@ class NoteController extends AbstractController
             return $response;
         }
 
-        # Check if user_id exist
         if (!$user_id) {
             $response->setData([
                 'success' => false,
@@ -219,19 +210,14 @@ class NoteController extends AbstractController
             return $response;
         }
 
-        # Update 
+
         if ($note_to_update->getContent() !== $content) {
             $note_to_update->setContent($content);
         }
-
         if ($note_to_update->getOwner() !== $user) {
             $note_to_update->seteOwner($user);
         }
-
         $entityManager->flush();
-
-        # Prepare response
-        $response = new JsonResponse();
         $response->setData([
             'success' => true,
             'data' => 'User with id ' . $id . ' has been updated successfully'
@@ -244,7 +230,6 @@ class NoteController extends AbstractController
     public function addCategory(int $id, int $category_id, EntityManagerInterface $entityManager): JsonResponse
     {
         $response = new JsonResponse();
-
         $note = $entityManager->getRepository(Note::class)->find($id);
         $category = $entityManager->getRepository(Category::class)->find($category_id);
 
@@ -272,7 +257,6 @@ class NoteController extends AbstractController
     public function removeCategory(int $id, int $category_id, EntityManagerInterface $entityManager): JsonResponse
     {
         $response = new JsonResponse();
-
         $note = $entityManager->getRepository(Note::class)->find($id);
         $category = $entityManager->getRepository(Category::class)->find($category_id);
 
@@ -287,12 +271,10 @@ class NoteController extends AbstractController
 
         $note->removeCategory($category);
         $entityManager->flush();
-
         $response->setData([
             'success' => true,
             'error' => 'Category has been removed successfully',
         ]);
-
         return $response;
     }
 
@@ -302,16 +284,15 @@ class NoteController extends AbstractController
         $response = new JsonResponse();
         $notes = $entityManager->getRepository(Note::class)->findOldNotes();
 
-        if(count($notes) < 1){
+        if (count($notes) < 1) {
             $response->setData([
                 'success' => true,
-                'data' => 'No notes older than 7 days found',
+                'data' => 'No notes found',
             ]);
             return $response;
         }
 
-        $notes_list = [];
-        foreach ($notes as $note){
+        foreach ($notes as $note) {
             $user = $entityManager->getRepository(User::class)->find($note->getOwner());
             $note_categories = $note->getCategories();
             $category_list = [];

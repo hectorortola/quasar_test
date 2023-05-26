@@ -17,11 +17,9 @@ class UserController extends AbstractController
         $response = new JsonResponse();
         $new_user = new User();
         
-        # Get request parameters
         $parameters = json_decode($request->getContent(), true);
         $name = $parameters['name'];
 
-        # Check if fields are empty
         if (empty($name)) {
             $response->setData([
                 'success' => false,
@@ -31,10 +29,7 @@ class UserController extends AbstractController
             return $response;
         }
 
-        # Set attributes to the new user
         $new_user->setName($name);
-
-        # Save
         $entityManager->getRepository(User::class)->save($new_user, true);
 
         $response->setData([
@@ -53,7 +48,7 @@ class UserController extends AbstractController
     {
         $response = new JsonResponse();
         $users = $entityManager->getRepository(User::class)->findAll();
-        $userList = [];
+        $user_list = [];
 
         if (count($users) === 0){
             $response->setData([
@@ -63,9 +58,8 @@ class UserController extends AbstractController
             return $response;
         }
 
-        # Iterate to build array with data
         foreach ($users as $user) {
-            $userList[] = [
+            $user_list[] = [
                 'id' => $user->getId(),
                 'name' => $user->getName(),
             ];
@@ -73,7 +67,7 @@ class UserController extends AbstractController
         
         $response->setData([
             'success' => true,
-            'data' => $userList
+            'data' => $user_list
         ]);
         return $response;
     }
@@ -84,12 +78,15 @@ class UserController extends AbstractController
         $response = new JsonResponse();
         $user_to_delete = $entityManager->getRepository(User::class)->find($id);
         if (!$user_to_delete) {
-            return $this->json('No user found for id: ' . $id, 404);
+            $response->setData([
+                'success' => false,
+                'error' => 'No user found for id: ' . $id
+            ]);
+            $response->setStatusCode(404);
+            return $response;
         }
 
         $entityManager->getRepository(User::class)->remove($user_to_delete, true);
-
-        # Response body
         $response->setData([
             'success' => true,
             'data' => 'User with id ' . $id . ' has been deleted successfully'
@@ -101,24 +98,26 @@ class UserController extends AbstractController
     #[Route('/user/edit/{id}', name: 'edit_user')]
     public function update(Request $request, int $id, EntityManagerInterface $entityManager): JsonResponse
     {
+        $response = new JsonResponse();
         $user_to_update = $entityManager->getRepository(User::class)->find($id);
+
         if (!$user_to_update) {
-            return $this->json('No user found for id: ' . $id, 404);
+            $response->setData([
+                'success' => false,
+                'error' => 'No user found for id: ' . $id
+            ]);
+            $response->setStatusCode(404);
+            return $response;
         }
 
-        # Get params
         $parameters = json_decode($request->getContent(), true);
         $name = $parameters['name'];
 
-        # Update
         if ($user_to_update->getName() !== $name) {
             $user_to_update->setName($name);
         }
-
         $entityManager->flush();
-
-        # Prepare response
-        $response = new JsonResponse();
+        
         $response->setData([
             'success' => true,
             'data' => 'User with id ' . $id . ' has been updated successfully'
