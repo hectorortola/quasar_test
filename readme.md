@@ -1,4 +1,4 @@
-# Test Quasa
+# Quasar Test
 Quasar_test is a Symfony 6.2 appplication with a mysql database with the purpose of manage user with notes and categories.
 
 ## Installation
