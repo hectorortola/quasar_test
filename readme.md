@@ -6,15 +6,17 @@ Quasar_test is a Symfony 6.2 appplication with a mysql database with the purpose
 Use the package manager [composer](https://getcomposer.org/) to install all packages.
 
 ```bash
-cd /quasar-test
-composer install
+cd /quasar_test
+
+install project packages -> composer install
 
 (configure database in .env file)
 
-php bin/console doctrine:database:create     
-php bin/console doctrine:migrations:migrate
-
-symfony server:start
+create database -> php bin/console doctrine:database:create     
+create migration -> php bin/console make:migration  
+doctrine migrate -> php bin/console doctrine:migrations:migrate
+start project -> symfony server:start
+stop project -> symfony server:stop
 ```
 
 ## Postman Collection
