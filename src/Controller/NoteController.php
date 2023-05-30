@@ -2,96 +2,60 @@
 
 namespace App\Controller;
 
-use App\Entity\Category;
+use App\Entity\DataSerializer;
 use App\Entity\Note;
-use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Repository\CategoryRepository;
+use App\Repository\NoteRepository;
+use App\Repository\UserRepository;
+
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-class NoteController extends AbstractController
+class NoteController extends DataSerializer
 {
-    #[Route('/note/create', name: 'create_note')]
-    public function create(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/note', name: 'create_note', methods: ['POST'])]
+    public function create(Request $request, NoteRepository $noteRepository, UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
         $new_note = new Note();
         $new_note->setDateCreated(new \DateTime());
-
         $parameters = json_decode($request->getContent(), true);
         $content = $parameters['content'];
         $user_id = $parameters['user_id'];
 
         if (strlen($content) <= 0) {
-            $response->setData([
-                'success' => false,
-                'error' => 'Content cannot be empty',
-                'data' => null
-            ]);
-            $response->setStatusCode(422);
-            return $response;
+            return new Response('Error: Content cannot be empty', 422);
         }
 
         if (!$user_id or $user_id <= 0) {
-            $response->setData([
-                'success' => false,
-                'error' => 'User_id cannot be empty or 0',
-                'data' => null
-            ]);
-            $response->setStatusCode(422);
-            return $response;
+            return new Response('Error: User_id cannot be empty or 0', 422);
         }
 
-        $user = $entityManager->getRepository(User::class)->find($user_id);
+        $user = $userRepository->find($user_id);
         if (!$user) {
-            $response->setData([
-                'success' => false,
-                'error' => 'User not found',
-                'data' => null
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('Error: User not found', 422);
         }
 
         $new_note->setContent($content);
         $new_note->setOwner($user);
-        $entityManager->getRepository(Note::class)->save($new_note, true);
-
-        $response->setData([
-            'success' => true,
-            'data' =>
-            [
-                'id' => $new_note->getId(),
-                'content' => $new_note->getContent(),
-                'owner' => [
-                    'id' => $user->getId(),
-                    'name' => $user->getName(),
-                ],
-                'date_created' => $new_note->getDateCreated(),
-            ]
-        ]);
-        return $response;
+        $noteRepository->save($new_note, true);
+        $jsonData = parent::serialize($new_note);
+        
+        return new Response($jsonData, 200, ['Content-Type' => 'application/json']);
     }
 
-    #[Route('/notes', name: 'list_note')]
-    public function read(EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/notes', name: 'list_note', methods: ['GET'])]
+    public function read(NoteRepository $noteRepository, UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
-        $notes = $entityManager->getRepository(Note::class)->findAll();
+        $notes = $noteRepository->findAll();
         $note_list = [];
 
         if (count($notes) === 0) {
-            $response->setData([
-                'success' => false,
-                'error' => 'No note has been registered'
-            ]);
-            return $response;
+            return new Response('No note has been registered yet', 200);
         }
 
         foreach ($notes as $note) {
-            $user = $entityManager->getRepository(User::class)->find($note->getOwner());
+            $user = $userRepository->find($note->getOwner());
             $note_categories = $note->getCategories();
             $category_list = [];
 
@@ -99,15 +63,7 @@ class NoteController extends AbstractController
                 $category_list[] = [
                     'category' => []
                 ];
-            }
-
-            if (count($note_categories) === 1) {
-                $category_list[] = [
-                    'category' => $note_categories[0]->getName()
-                ];
-            }
-
-            if (count($note_categories) > 1) {
+            }else{
                 foreach ($note_categories as $category) {
                     $category_list[] = [
                         'category' => $category->getName()
@@ -126,53 +82,30 @@ class NoteController extends AbstractController
                 ],
 
             ];
+            $jsonData = parent::serialize($note_list);
         };
 
-        $response->setData([
-            'success' => true,
-            'data' => $note_list
-        ]);
-        return $response;
+        return new Response($jsonData, 200, ['Content-Type' => 'application/json']);
     }
 
-    #[Route('/note/delete/{id}', name: 'delete_note')]
-    public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/note/{id}', name: 'delete_note', methods: ['DELETE'])]
+    public function delete(int $id, NoteRepository $noteRepository): Response
     {
-        $response = new JsonResponse();
-        $note_to_delete = $entityManager->getRepository(Note::class)->find($id);
-
+        $note_to_delete = $noteRepository->find($id);
         if (!$note_to_delete) {
-            $response->setData([
-                'success' => false,
-                'error' => 'No note found for id: ' . $id
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('Error: No note found for id: ' . $id, 404);
         }
 
-        $entityManager->getRepository(Note::class)->remove($note_to_delete, true);
-
-        $response->setData([
-            'success' => true,
-            'data' => 'Note with id ' . $id . ' has been deleted successfully'
-        ]);
-        $response->setStatusCode(200);
-        return $response;
+        $noteRepository->remove($note_to_delete, true);
+        return new Response('Note with id ' . $id . ' has been deleted successfully', 200);
     }
 
-    #[Route('/note/edit/{id}', name: 'edit_note')]
-    public function update(Request $request, int $id, EntityManagerInterface $entityManager): JsonResponse
-    {
-        $response = new JsonResponse();
-        $note_to_update = $entityManager->getRepository(Note::class)->find($id);
-
+    #[Route('/note/{id}', name: 'edit_note', methods: ['PUT'])]
+    public function update(Request $request, int $id, NoteRepository $noteRepository, UserRepository $userRepository): Response
+    {  
+        $note_to_update = $noteRepository->find($id);
         if (!$note_to_update) {
-            $response->setData([
-                'success' => false,
-                'error' => 'No note found for id: ' . $id
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('Error: No note found for id: ' . $id, 404);
         }
 
         $parameters = json_decode($request->getContent(), true);
@@ -180,34 +113,16 @@ class NoteController extends AbstractController
         $user_id = $parameters['user_id'];
 
         if (strlen($content) <= 0) {
-            $response->setData([
-                'success' => false,
-                'error' => 'Content cannot be empty',
-                'data' => null
-            ]);
-            $response->setStatusCode(422);
-            return $response;
+            return new Response('Content cannot be empty', 422);
         }
 
-        if (!$user_id) {
-            $response->setData([
-                'success' => false,
-                'error' => 'User_id cannot be empty',
-                'data' => null
-            ]);
-            $response->setStatusCode(422);
-            return $response;
+        if (!$user_id) {            
+            return new Response('User_id cannot be empty', 422);
         }
 
-        $user = $entityManager->getRepository(User::class)->find($user_id);
+        $user = $userRepository->find($user_id);
         if (!$user) {
-            $response->setData([
-                'success' => false,
-                'error' => 'User not found',
-                'data' => null
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('User not found', 404);
         }
 
 
@@ -215,85 +130,56 @@ class NoteController extends AbstractController
             $note_to_update->setContent($content);
         }
         if ($note_to_update->getOwner() !== $user) {
-            $note_to_update->seteOwner($user);
+            $note_to_update->setOwner($user);
         }
-        $entityManager->flush();
-        $response->setData([
-            'success' => true,
-            'data' => 'User with id ' . $id . ' has been updated successfully'
-        ]);
-        $response->setStatusCode(200);
-        return $response;
+        $noteRepository->flush();
+        return new Response('User with id ' . $id . ' has been updated successfully', 200);
     }
 
-    #[Route('/note/{id}/add-category/{category_id}', name: 'add_category')]
-    public function addCategory(int $id, int $category_id, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/note/{id}/category/{category_id}', name: 'add_category', methods: ['POST'])]
+    public function addCategory(int $id, int $category_id, CategoryRepository $categoryRepository, NoteRepository $noteRepository): Response
     {
-        $response = new JsonResponse();
-        $note = $entityManager->getRepository(Note::class)->find($id);
-        $category = $entityManager->getRepository(Category::class)->find($category_id);
+        $note = $noteRepository->find($id);
+        $category = $categoryRepository->find($category_id);
 
         if (!$note || !$category) {
-            $response->setData([
-                'success' => false,
-                'error' => 'Note or category not found',
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('Note or category not found',404);
         }
 
         $note->addCategory($category);
-        $entityManager->flush();
+        $noteRepository->flush();
 
-        $response->setData([
-            'success' => true,
-            'error' => 'Category has been added successfully',
-        ]);
-
-        return $response;
+        $jsonData = parent::serialize($note);
+        return new Response($jsonData, 200, ['Content-Type' => 'application/json']);
     }
 
-    #[Route('/note/{id}/remove-category/{category_id}', name: 'remove_category')]
-    public function removeCategory(int $id, int $category_id, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/note/{id}/category/{category_id}', name: 'remove_category',  methods: ['DELETE'])]
+    public function removeCategory(int $id, int $category_id, CategoryRepository $categoryRepository, NoteRepository $noteRepository): Response
     {
-        $response = new JsonResponse();
-        $note = $entityManager->getRepository(Note::class)->find($id);
-        $category = $entityManager->getRepository(Category::class)->find($category_id);
+        $note = $noteRepository->find($id);
+        $category = $categoryRepository->find($category_id);
 
         if (!$note || !$category) {
-            $response->setData([
-                'success' => false,
-                'error' => 'Note or category not found',
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('Note or category not found', 404);
         }
 
         $note->removeCategory($category);
-        $entityManager->flush();
-        $response->setData([
-            'success' => true,
-            'error' => 'Category has been removed successfully',
-        ]);
-        return $response;
+        $noteRepository->flush();
+
+        $jsonData = parent::serialize($note);
+        return new Response($jsonData, 200, ['Content-Type' => 'application/json']);
     }
 
-    #[Route('/old-notes', name: 'read_old_notes')]
-    public function checkOldNotes(EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/old-notes', name: 'read_old_notes', methods: ['GET'])]
+    public function checkOldNotes(NoteRepository $noteRepository, UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
-        $notes = $entityManager->getRepository(Note::class)->findOldNotes();
-
+        $notes = $noteRepository->findOldNotes();
         if (count($notes) < 1) {
-            $response->setData([
-                'success' => true,
-                'data' => 'No notes found',
-            ]);
-            return $response;
+            return new Response('No notes older than 7 days found', 404);
         }
 
         foreach ($notes as $note) {
-            $user = $entityManager->getRepository(User::class)->find($note->getOwner());
+            $user = $userRepository->find($note->getOwner());
             $note_categories = $note->getCategories();
             $category_list = [];
 
@@ -301,15 +187,7 @@ class NoteController extends AbstractController
                 $category_list[] = [
                     'category' => []
                 ];
-            }
-
-            if (count($note_categories) === 1) {
-                $category_list[] = [
-                    'category' => $note_categories[0]->getName()
-                ];
-            }
-
-            if (count($note_categories) > 1) {
+            }else{
                 foreach ($note_categories as $category) {
                     $category_list[] = [
                         'category' => $category->getName()
@@ -329,10 +207,7 @@ class NoteController extends AbstractController
             ];
         };
 
-        $response->setData([
-            'success' => true,
-            'data' => $note_list,
-        ]);
-        return $response;
+        $jsonData = parent::serialize($note_list);
+        return new Response($jsonData, 200, ['Content-Type'=> 'application/json']);
     }
 }

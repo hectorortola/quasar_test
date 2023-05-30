@@ -2,127 +2,85 @@
 
 namespace App\Controller;
 
+use App\Entity\DataSerializer;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Repository\UserRepository;
+
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-class UserController extends AbstractController
+class UserController extends DataSerializer
 {
-    #[Route('/user/create', name: 'create_user')]
-    public function create(Request $request, EntityManagerInterface $entityManager): JsonResponse
+
+    #[Route('/user', name: 'create_user', methods: ['POST'])]
+    public function create(Request $request, UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
         $new_user = new User();
-        
         $parameters = json_decode($request->getContent(), true);
         $name = $parameters['name'];
 
         if (empty($name)) {
-            $response->setData([
-                'success' => false,
-                'error' => 'Name cannot be empty',
-                'data' => null
-            ]);
-            return $response;
+            return new Response('Error: Name cannot be empty', 422);
         }
 
         $new_user->setName($name);
-        $entityManager->getRepository(User::class)->save($new_user, true);
-
-        $response->setData([
-            'success' => true,
-            'data' =>
-            [
-                'id' => $new_user->getId(),
-                'name' => $new_user->getName()
-            ]
-        ]);
-        return $response;
+        $userRepository->save($new_user, true);
+        $jsonData = parent::serialize($new_user);
+        return new Response($jsonData, 200,  ['Content-Type' => 'application/json']);
     }
 
-    #[Route('/user', name: 'list_user')]
-    public function read(EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/users', name: 'list_user', methods: ['GET'])]
+    public function read(UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
-        $users = $entityManager->getRepository(User::class)->findAll();
-        $user_list = [];
-
-        if (count($users) === 0){
-            $response->setData([
-                'success' => false,
-                'error' => 'No user has been registered'
-            ]);
-            return $response;
+        $users = $userRepository->findAll();
+        if (count($users) === 0) {
+            return new Response('No user has been registered yet', 200);
         }
 
+        $user_list = [];
         foreach ($users as $user) {
             $user_list[] = [
                 'id' => $user->getId(),
                 'name' => $user->getName(),
             ];
         };
-        
-        $response->setData([
-            'success' => true,
-            'data' => $user_list
-        ]);
-        return $response;
+
+        $jsonData = parent::serialize($user_list);
+        return new Response($jsonData, 200, ['Content-Type' => 'application/json']);
     }
 
-    #[Route('/user/delete/{id}', name: 'delete_user')]
-    public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/user/{id}', name: 'delete_user', methods: ['DELETE'])]
+    public function delete(int $id, UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
-        $user_to_delete = $entityManager->getRepository(User::class)->find($id);
+        $user_to_delete = $userRepository->find($id);
         if (!$user_to_delete) {
-            $response->setData([
-                'success' => false,
-                'error' => 'No user found for id: ' . $id
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+            return new Response('Error: No user found for id: ' . $id, 404);
         }
-
-        $entityManager->getRepository(User::class)->remove($user_to_delete, true);
-        $response->setData([
-            'success' => true,
-            'data' => 'User with id ' . $id . ' has been deleted successfully'
-        ]);
-        $response->setStatusCode(200);
-        return $response;
+        $userRepository->remove($user_to_delete, true);
+        return new Response('User with id ' . $id . ' has been deleted successfully', 200);
     }
 
-    #[Route('/user/edit/{id}', name: 'edit_user')]
-    public function update(Request $request, int $id, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/user/{id}', name: 'edit_user', methods: ['PUT'])]
+    public function update(Request $request, int $id, UserRepository $userRepository): Response
     {
-        $response = new JsonResponse();
-        $user_to_update = $entityManager->getRepository(User::class)->find($id);
-
-        if (!$user_to_update) {
-            $response->setData([
-                'success' => false,
-                'error' => 'No user found for id: ' . $id
-            ]);
-            $response->setStatusCode(404);
-            return $response;
+        $userToUpdate = $userRepository->find($id);
+        if (!$userToUpdate) {
+            return new Response('Error: No user found with id: ' . $id, 404);
         }
 
         $parameters = json_decode($request->getContent(), true);
         $name = $parameters['name'];
-
-        if ($user_to_update->getName() !== $name) {
-            $user_to_update->setName($name);
+        if (empty($name)) {
+            return new Response('Error: Name cannot be empty', 422);
         }
-        $entityManager->flush();
-        
-        $response->setData([
-            'success' => true,
-            'data' => 'User with id ' . $id . ' has been updated successfully'
-        ]);
-        $response->setStatusCode(200);
-        return $response;
+
+        if ($userToUpdate->getName() !== $name) {
+            $userToUpdate->setName($name);
+        }
+        $userRepository->flush();
+
+        $jsonData = parent::serialize($userToUpdate);
+        return new Response($jsonData, 200, ['Content-Type' => 'application/json']);
     }
 }

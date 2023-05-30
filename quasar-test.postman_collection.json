@@ -15,7 +15,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"Hector Ortola\"\r\n}",
+							"raw": "{\r\n    \"name\":\"Test User\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -23,13 +23,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/user/create",
+							"raw": "{{url}}/user",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"user",
-								"create"
+								"user"
 							]
 						}
 					},
@@ -42,7 +41,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"Hector\",\r\n    \"email_address\":\"hector1@gmail.com\"\r\n}",
+							"raw": "{\r\n    \"name\":\"Test O.\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -50,13 +49,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/user/edit/1",
+							"raw": "{{url}}/user/1",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"user",
-								"edit",
 								"1"
 							]
 						}
@@ -69,12 +67,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/user",
+							"raw": "{{url}}/users",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"user"
+								"users"
 							]
 						}
 					},
@@ -95,14 +93,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/user/delete/1",
+							"raw": "{{url}}/user/2",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"user",
-								"delete",
-								"1"
+								"2"
 							]
 						}
 					},
@@ -120,7 +117,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"Games\"\r\n}",
+							"raw": "{\r\n    \"name\":\"Games XBOX\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -128,13 +125,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/category/create",
+							"raw": "{{url}}/category",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"category",
-								"create"
+								"category"
 							]
 						}
 					},
@@ -147,7 +143,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"PC Games\",\r\n}",
+							"raw": "{\r\n    \"name\":\"PC Games\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -155,13 +151,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/category/edit/1",
+							"raw": "{{url}}/category/1",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"category",
-								"edit",
 								"1"
 							]
 						}
@@ -200,13 +195,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/category/delete/2",
+							"raw": "{{url}}/category/2",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"category",
-								"delete",
 								"2"
 							]
 						}
@@ -225,7 +219,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"content\":\"First note\",\r\n    \"user_id\": 2\r\n}",
+							"raw": "{\r\n    \"content\":\"First note\",\r\n    \"user_id\": 1\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -233,13 +227,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/note/create",
+							"raw": "{{url}}/note",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"note",
-								"create"
+								"note"
 							]
 						}
 					},
@@ -252,7 +245,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"content\":\"My third note of the day\",\r\n    \"user_id\": 2\r\n}",
+							"raw": "{\r\n    \"content\":\"My third note of the day\",\r\n    \"user_id\": 1\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -260,13 +253,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/note/edit/1",
+							"raw": "{{url}}/note/1",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"note",
-								"edit",
 								"1"
 							]
 						}
@@ -333,15 +325,15 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/note/1/add-category/1",
+							"raw": "{{url}}/note/1/category/3",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"note",
 								"1",
-								"add-category",
-								"1"
+								"category",
+								"3"
 							]
 						}
 					},
@@ -350,7 +342,7 @@
 				{
 					"name": "Remove category to note",
 					"request": {
-						"method": "POST",
+						"method": "DELETE",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -362,15 +354,15 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/note/1/remove-category/1",
+							"raw": "{{url}}/note/1/category/3",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"note",
 								"1",
-								"remove-category",
-								"1"
+								"category",
+								"3"
 							]
 						}
 					},

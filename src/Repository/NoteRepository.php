@@ -39,6 +39,11 @@ class NoteRepository extends ServiceEntityRepository
         }
     }
 
+    public function flush()
+    {
+        $this->getEntityManager()->flush();
+    }
+
     /**
      * @return Note[] Returns an array of Note objects
     */
